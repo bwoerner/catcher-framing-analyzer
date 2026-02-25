@@ -114,17 +114,31 @@
 
 ---
 
-## Step 5 - Glove Detection & Tracking (MediaPipe)
+## Step 5 - Glove Detection & Tracking (MediaPipe) ✅
 - Use **MediaPipe Pose only** — Hands dropped due to unreliability with catcher's mitt
 - Glove assumed to always be on the **left hand** (hardcoded)
-- Primary glove position = **left wrist landmark** from Pose
-- Also extract per frame:
-  - Left elbow landmark (for Elbow Movement metric)
-  - Left/right shoulder landmarks averaged (for Body Stability metric)
+- **Run MediaPipe Pose on every frame of the full video** — landmark data stored for all frames
+- This enables the body skeleton overlay to be drawn on every frame in the output video
+- Post-catch analysis window (Step 6) uses the same data, starting from the catch frame
+- Landmarks extracted per frame:
+  - **Left wrist** — glove position proxy
+  - **Left elbow** — for Elbow Movement metric
+  - **Left shoulder, right shoulder, left hip, right hip** — averaged for Body Stability metric (4-point body frame)
 - Smooth all positions with a rolling average to reduce noise
+- Handle missing landmarks gracefully — skip or interpolate if MediaPipe fails on a frame
 
 **Files to create:**
-- `glove_tracker.py` — MediaPipe Pose setup, per-frame landmark extraction, position smoothing
+- `glove_tracker.py` — MediaPipe Pose setup, full-video landmark extraction, position smoothing
+
+**Completed:**
+- Created `glove_tracker.py` with `track_video(video_path)` — runs MediaPipe Pose on every frame
+- Uses new MediaPipe Tasks API (`mp.tasks.vision.PoseLandmarker`) — `mp.solutions` removed in v0.10.32
+- Model file (`pose_landmarker_full.task`) auto-downloaded on first run to `models/` folder (gitignored)
+- `FrameLandmarks` dataclass stores per-frame: `wrist`, `elbow`, `left_shoulder`, `right_shoulder`, `left_hip`, `right_hip` as (x, y) pixel coords or `None` if visibility < 0.3
+- `body_center` property averages the 4 body frame points (shoulders + hips)
+- All landmark series smoothed with rolling average (`POSITION_SMOOTH_WINDOW` from config)
+- Missing landmarks return `None` — handled gracefully throughout
+- Tested on `IMG_5217.MOV` — 135 frames processed, landmarks detected on every frame
 
 ---
 
@@ -177,7 +191,7 @@ Body Stability   0.6 in
 - `Direction` — `Toward` or `Away` relative to the nearest strike zone edge
 - `Hold Time` — seconds from catch frame to glove settle
 - `Elbow Movement` — total elbow landmark displacement from catch to settle
-- `Body Stability` — total shoulder/torso landmark displacement from catch to settle (less = better)
+- `Body Stability` — average displacement of 4-point body frame (left shoulder, right shoulder, left hip, right hip) from catch to settle (less = better)
 
 **Files to create:**
 - `reporter.py` — frame annotation, metrics overlay, video writing
@@ -226,6 +240,8 @@ catcher app/
 | Strike zone definition | Interactive calibration, saved as named profiles |
 | Calibration scope | One profile per batch; profiles reusable across sessions |
 | Glove detection | MediaPipe Pose only — left wrist landmark (Hands dropped, unreliable with mitt) |
+| Tracking scope | Full video — Pose runs on every frame for skeleton overlay; post-catch window used for metrics |
+| Body stability landmarks | 4-point body frame: left shoulder, right shoulder, left hip, right hip |
 | Catching hand | Always left hand (hardcoded) |
 | Pitch segmentation | Manual — user marks one catch frame per video during interactive playback |
 | Catch frame marking | Press `M` to mark, press again to move the mark; `Enter` to confirm |

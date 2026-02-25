@@ -19,6 +19,9 @@ output/
 # Calibration profiles (local to each machine)
 profiles.json
 
+# Downloaded MediaPipe models
+models/
+
 # Video files (likely large)
 *.mp4
 *.mov
