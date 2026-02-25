@@ -23,13 +23,49 @@ class VideoInfo:
         return self.frame_count / self.fps if self.fps > 0 else 0
 
 
-def scan_folder(folder_path):
-    """Return a sorted list of video file paths found in folder_path."""
+def scan_subfolders(root_path):
+    """
+    Scan root_path for subfolders. Return a list of subfolder paths
+    that have at least one unprocessed video (no _tracked output yet).
+    """
+    pending = []
+    for name in sorted(os.listdir(root_path)):
+        subfolder = os.path.join(root_path, name)
+        if not os.path.isdir(subfolder) or name.startswith('.'):
+            continue
+        unprocessed = scan_folder(subfolder, skip_tracked=True)
+        if unprocessed:
+            pending.append(subfolder)
+    return pending
+
+
+def scan_folder(folder_path, skip_tracked=False):
+    """
+    Return a sorted list of video file paths found in folder_path.
+    If skip_tracked=True, exclude videos that already have a _tracked output.
+    """
+    from config import OUTPUT_SUFFIX
     videos = []
+    from config import OUTPUT_SUFFIX
     for filename in sorted(os.listdir(folder_path)):
-        if filename.lower().endswith(SUPPORTED_EXTENSIONS):
-            videos.append(os.path.join(folder_path, filename))
+        if not filename.lower().endswith(SUPPORTED_EXTENSIONS):
+            continue
+        # Skip files that are themselves _tracked outputs
+        name, _ = os.path.splitext(filename)
+        if name.endswith(OUTPUT_SUFFIX):
+            continue
+        if skip_tracked and _is_processed(folder_path, filename):
+            continue
+        videos.append(os.path.join(folder_path, filename))
     return videos
+
+
+def _is_processed(folder_path, filename):
+    """Return True if a _tracked output file exists for this video."""
+    from config import OUTPUT_SUFFIX
+    name, ext = os.path.splitext(filename)
+    tracked_name = f"{name}{OUTPUT_SUFFIX}{ext}"
+    return os.path.exists(os.path.join(folder_path, tracked_name))
 
 
 def get_video_info(video_path):

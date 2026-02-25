@@ -31,7 +31,7 @@
 **Completed:**
 - Created `requirements.txt` and installed all dependencies via `python -m pip install -r requirements.txt`
 - Created `config.py` with all tunable constants: tracking thresholds, measurement values, video extensions, output suffix, overlay colors and font settings
-- Created `main.py` skeleton — accepts an optional folder path argument, defaults to `./videos/`, validates folder exists, exits with error if not found
+- Created `main.py` — accepts an optional folder path argument, defaults to `./videos/`, scans subfolders, auto-loads or triggers calibration per subfolder, lists unprocessed videos (Steps 4–7 wired in as TODOs)
 - Created `videos/` folder as the default input location — contents gitignored, folder tracked via `.gitkeep`
 - Updated `.gitignore` to ignore video files inside `videos/` while keeping the folder tracked
 
@@ -53,7 +53,10 @@
   - `get_video_info(video_path)` — opens video and returns a `VideoInfo` dataclass with `fps`, `frame_count`, `width`, `height`, `duration_seconds`, and `filename`
   - `read_frame(cap, frame_number)` — seeks to a specific frame and returns it (utility needed by later modules)
 - Tested with `IMG_5217.MOV` — 30fps, 135 frames, 1920x1080, 4.5s duration
-- **Needs update:** add subfolder scanning and `_tracked` skip logic (to be done when wiring `main.py`)
+- Added `scan_subfolders(root_path)` — scans top-level folder for subfolders with unprocessed videos
+- Added `_is_processed()` — checks if a `_tracked` output already exists for a video
+- Updated `scan_folder()` to skip `_tracked` files and accept `skip_tracked` flag
+- All tested and verified with `2-23-26 practice` subfolder
 
 ---
 
@@ -61,7 +64,6 @@
 - Profiles are named after their subfolder — auto-loaded when the tool processes that subfolder
 - If no matching profile exists for a subfolder, interactive calibration is triggered automatically
 - Profiles saved to a local JSON file (`profiles.json`)
-- Terminal UI also allows manually selecting, creating, or editing profiles
 
 **Interactive calibration:**
 - Display first frame of the first video in the subfolder
@@ -80,6 +82,8 @@
 - Zone height = plate width × 1.5 (`STRIKE_ZONE_HEIGHT_RATIO = 1.5` in config)
 - Calibration window opens at 1280×720, previews derived zone after both clicks, R to reset, Esc to cancel
 - Profiles saved/loaded from `profiles.json` — save/load roundtrip tested successfully
+- Terminal menu removed — calibration is triggered automatically by `main.py` based on subfolder name
+- Full flow tested end-to-end via `main.py`: subfolder detected → calibration triggered → profile saved → video listed
 
 ---
 
