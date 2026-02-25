@@ -14,7 +14,7 @@
 
 ---
 
-## Step 1 - Project Setup
+## Step 1 - Project Setup ✅
 - Create project structure and `requirements.txt`
 - Install dependencies: `opencv-python`, `mediapipe`, `numpy`, `matplotlib`
 - Set up CLI entry point (`main.py`)
@@ -23,6 +23,13 @@
 - `main.py` — entry point, wires everything together
 - `requirements.txt` — dependencies
 - `config.py` — constants (velocity threshold, max hold duration, supported video extensions, etc.)
+
+**Completed:**
+- Created `requirements.txt` and installed all dependencies via `python -m pip install -r requirements.txt`
+- Created `config.py` with all tunable constants: tracking thresholds, measurement values, video extensions, output suffix, overlay colors and font settings
+- Created `main.py` skeleton — accepts an optional folder path argument, defaults to `./videos/`, validates folder exists, exits with error if not found
+- Created `videos/` folder as the default input location — contents gitignored, folder tracked via `.gitkeep`
+- Updated `.gitignore` to ignore video files inside `videos/` while keeping the folder tracked
 
 ---
 
