@@ -24,6 +24,8 @@ profiles.json
 *.mov
 *.avi
 *.mkv
+videos/*
+!videos/.gitkeep
 
 # OS
 .DS_Store

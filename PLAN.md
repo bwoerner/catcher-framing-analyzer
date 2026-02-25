@@ -158,6 +158,7 @@ catcher app/
 ├── framing_analysis.py
 ├── reporter.py
 ├── profiles.json        # gitignored — saved calibration profiles
+├── videos/              # input videos go here (gitignored)
 └── PLAN.md
 ```
 
