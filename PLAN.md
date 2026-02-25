@@ -1,94 +1,128 @@
 # Catcher Framing Analyzer - Build Plan
 
-**Stack:** Python, OpenCV, NumPy, Matplotlib
+**Stack:** Python, OpenCV, MediaPipe, NumPy, Matplotlib
+
+---
+
+## Workflow Overview
+
+1. Run the tool pointed at a **folder of videos**
+2. Select or create a **named calibration profile** (defines the strike zone for this camera angle)
+3. For each video, an **interactive playback window** opens — user presses a key to mark each catch frame
+4. Tool processes all marked pitches using MediaPipe glove tracking
+5. Outputs a `{filename}_tracked.{ext}` annotated video per input file, saved alongside the original
 
 ---
 
 ## Step 1 - Project Setup
 - Create project structure and `requirements.txt`
-- Install dependencies: `opencv-python`, `numpy`, `matplotlib`
-- Set up a simple CLI entry point (`main.py`)
+- Install dependencies: `opencv-python`, `mediapipe`, `numpy`, `matplotlib`
+- Set up CLI entry point (`main.py`)
 
 **Files to create:**
-- `main.py` — entry point
+- `main.py` — entry point, wires everything together
 - `requirements.txt` — dependencies
-- `config.py` — constants (strike zone dimensions, thresholds, etc.)
+- `config.py` — constants (velocity threshold, max hold duration, supported video extensions, etc.)
 
 ---
 
-## Step 2 - Video Loading & Frame Extraction
-- Accept an MP4 file path as CLI argument
-- Use OpenCV (`cv2.VideoCapture`) to read the video
-- Extract frames at configurable intervals or around detected events
-- Store frames in memory or temp directory for processing
+## Step 2 - Video Loading
+- Accept a folder path as CLI argument
+- Scan folder for supported video files (mp4, mov, avi)
+- Read each video with OpenCV (`cv2.VideoCapture`)
+- Extract FPS and frame count from video metadata
 
 **Files to create:**
-- `video_loader.py` — handles video reading and frame extraction
+- `video_loader.py` — folder scanning, video reading, metadata extraction
 
 ---
 
-## Step 3 - Strike Zone Definition
-- Define the strike zone as a rectangle in frame coordinate space
-- Support two modes:
-  - **Hardcoded** — fixed pixel bounds based on known camera angle
-  - **Interactive calibration** — user clicks corners at startup to define zone
+## Step 3 - Calibration Profiles
+- Named profiles that store strike zone corner coordinates
+- Profiles saved to a local JSON file (`profiles.json`)
+- At startup, user can:
+  - Select an existing profile
+  - Create a new profile (triggers interactive calibration)
+  - Edit an existing profile (re-run calibration)
+- One profile applies to the entire batch of videos being processed
+
+**Interactive calibration:**
+- Display first frame of the first video
+- User clicks 4 corners of the strike zone
+- Zone saved to the selected profile name
 
 **Files to create:**
-- `strike_zone.py` — zone definition, coordinate helpers, draw overlay
+- `calibration.py` — profile load/save, interactive calibration UI
+- `profiles.json` — persisted calibration profiles (gitignored)
 
 ---
 
-## Step 4 - Glove Detection & Tracking
-- Use OpenCV color masking or contour detection to locate the catcher's glove
-- Track glove center position across a sliding window of frames around the catch
-- Filter out noise with bounding box smoothing
+## Step 4 - Catch Frame Marking
+- For each video, open an interactive playback window
+- User controls:
+  - `Space` — play/pause
+  - `→` / `←` — step forward/backward one frame
+  - `M` — mark current frame as a catch frame
+  - `U` — unmark last marked frame
+  - `Enter` — done marking, proceed to processing
+  - `Q` — skip this video
+- Marked catch frames displayed as overlay on the video timeline
+- Returns list of catch frame numbers for processing
+
+**Logic lives in:** `video_loader.py` or dedicated `marker.py`
+
+---
+
+## Step 5 - Glove Detection & Tracking (MediaPipe)
+- Use **MediaPipe Pose** for body orientation and to locate the catching arm
+- Use **MediaPipe Hands** for precise glove/palm position
+- For each frame, extract (x, y) position of the catching hand landmark
+- Smooth positions with a rolling average to reduce noise
 
 **Files to create:**
-- `glove_tracker.py` — detection logic, frame-by-frame position tracking
-
----
-
-## Step 5 - Catch Point Identification
-- Detect the frame where the ball contacts the glove (motion/velocity change in glove position)
-- Record glove (x, y) coordinates at that exact frame
-
-**Logic lives in:** `glove_tracker.py`
+- `glove_tracker.py` — MediaPipe setup, per-frame landmark extraction, position smoothing
 
 ---
 
 ## Step 6 - Post-Catch Movement Analysis
-- Measure glove displacement across N frames after the catch point
-- Compute direction vector: toward or away from strike zone center
-- Flag as "steal" (glove pulled toward zone) or "give away" (glove moves away)
+- Starting from each marked catch frame, track glove position forward
+- **Stop condition:** glove velocity drops below threshold (defined in `config.py`) — glove has settled
+- **Max cap:** 2 seconds (converted to frames using video FPS at runtime)
+- Compute:
+  - Glove path from catch to settle
+  - Direction vector: toward or away from strike zone center
+  - Total displacement magnitude
+  - Classification: `"framed"` / `"neutral"` / `"gave away"`
 
 **Files to create:**
-- `framing_analysis.py` — movement vector math, zone proximity calculations
+- `framing_analysis.py` — velocity calculation, path analysis, zone proximity math, pitch classification
 
 ---
 
 ## Step 7 - Framing Score Per Pitch
 - Score each pitch based on:
-  - Catch location relative to zone edges (closer to edge = higher framing value)
+  - Catch location relative to zone edges (border pitches = higher framing value)
   - Post-catch movement direction and magnitude
-- Output a per-pitch score and classification (e.g., "framed", "neutral", "gave away")
+- Output per-pitch score and classification
 
 **Logic lives in:** `framing_analysis.py`
 
 ---
 
-## Step 8 - Summary Stats & Report
-- Aggregate all pitches into overall metrics:
-  - Framing grade (A–F or 0–100)
-  - Called strikes added (estimated)
-  - Average glove drift (px or normalized)
+## Step 8 - Annotated Video Output
+- For each input video, produce `{filename}_tracked.{ext}` saved in the same folder
+- Overlays drawn on each frame:
+  - Strike zone rectangle (from calibration profile)
+  - Glove position dot
+  - Post-catch glove path trail
+  - Pitch classification label (`"framed"` / `"neutral"` / `"gave away"`)
+  - Per-pitch score
+- Summary stats shown at end of video:
+  - Overall framing grade
   - Framing percentage by zone region
-- Output options:
-  - Print summary to terminal
-  - Save CSV of per-pitch data
-  - Save annotated frame images showing glove path and zone
 
 **Files to create:**
-- `reporter.py` — stats aggregation, CSV export, annotated frame output
+- `reporter.py` — frame annotation, video writing, summary overlay
 
 ---
 
@@ -100,11 +134,11 @@ catcher app/
 ├── config.py
 ├── requirements.txt
 ├── video_loader.py
-├── strike_zone.py
+├── calibration.py
 ├── glove_tracker.py
 ├── framing_analysis.py
 ├── reporter.py
-├── output/          # CSVs and annotated frames saved here
+├── profiles.json        # gitignored — saved calibration profiles
 └── PLAN.md
 ```
 
@@ -113,18 +147,34 @@ catcher app/
 ## Build Order
 
 1. `requirements.txt` + `config.py`
-2. `video_loader.py`
-3. `strike_zone.py`
-4. `glove_tracker.py`
-5. `framing_analysis.py`
-6. `reporter.py`
-7. `main.py` (wires everything together)
+2. `video_loader.py` (folder scan + video reading)
+3. `calibration.py` (profiles + interactive zone calibration)
+4. `video_loader.py` — catch frame marking UI
+5. `glove_tracker.py` (MediaPipe glove tracking)
+6. `framing_analysis.py` (post-catch analysis + scoring)
+7. `reporter.py` (annotated video output)
+8. `main.py` (wires everything together)
 
 ---
 
 ## Decisions Made
 
-- **Strike zone:** Interactive calibration — user clicks to define zone corners at startup
-- **Glove detection:** MediaPipe Pose + Hands — Pose for body orientation, Hands for precise glove position
-- **Post-catch tracking window:** Dynamic — track glove until velocity drops below a threshold (glove has settled), max cap of 2 seconds. Convert seconds → frames at runtime using the video's actual FPS, defined in `config.py`
-- **Output:** Annotated output video saved to the same directory as the input, named `{original_filename}_tracked.{ext}`
+| Decision | Choice |
+|---|---|
+| Strike zone definition | Interactive calibration, saved as named profiles |
+| Calibration scope | One profile per batch; profiles reusable across sessions |
+| Glove detection | MediaPipe Pose + Hands |
+| Pitch segmentation | Manual — user marks catch frames during interactive playback |
+| Catch frame detection | User presses `M` key during video playback |
+| Post-catch tracking window | Dynamic — track until glove velocity < threshold; 2s max cap |
+| Batch input | Folder of video files |
+| Output | Annotated video: `{filename}_tracked.{ext}`, saved alongside original |
+
+---
+
+## Config Values (to tune during development)
+
+- `GLOVE_VELOCITY_THRESHOLD` — px/frame below which glove is considered settled
+- `MAX_HOLD_SECONDS` — maximum post-catch tracking window (default: 2.0)
+- `SUPPORTED_EXTENSIONS` — video file types to scan for (default: mp4, mov, avi)
+- `POSITION_SMOOTH_WINDOW` — rolling average window for glove position smoothing

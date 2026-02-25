@@ -16,6 +16,9 @@ env/
 output/
 *_tracked.*
 
+# Calibration profiles (local to each machine)
+profiles.json
+
 # Video files (likely large)
 *.mp4
 *.mov
