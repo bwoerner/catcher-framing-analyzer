@@ -87,20 +87,30 @@
 
 ---
 
-## Step 4 - Catch Frame Marking
+## Step 4 - Catch Frame Marking ✅
 - Each video contains one pitch — user marks one catch frame per video
 - For each video, open an interactive playback window
 - User controls:
   - `Space` — play/pause
-  - `→` / `←` — step forward/backward one frame
+  - `A` / `D` — step backward/forward one frame (arrow keys return 0 on Windows, replaced with A/D)
   - `M` — mark current frame as the catch frame (pressing again moves the mark)
   - `Enter` — confirm mark and proceed to processing
   - `Q` — skip this video
 - Marked catch frame displayed as overlay indicator on the frame
+- Strike zone rectangle drawn on every frame from calibration profile
 - Returns single catch frame number for processing
 
 **Files to create:**
 - `marker.py` — interactive playback window, catch frame marking UI
+
+**Completed:**
+- Created `marker.py` with `mark_catch_frame(video_path, profile)` function
+- Playback window opens at 1280×720 with strike zone overlay from profile
+- `waitKey(0)` when paused ensures key presses are never missed
+- Frame counter shown top-left, catch frame label shown in orange once marked
+- Reminder shown if user presses Enter before marking a frame
+- Wired into `main.py` — catch frame number printed to terminal after marking
+- Tested with `IMG_5217.MOV` — A/D stepping confirmed working
 
 ---
 
