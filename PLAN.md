@@ -6,11 +6,15 @@
 
 ## Workflow Overview
 
-1. Run the tool pointed at a **folder of videos**
-2. Select or create a **named calibration profile** (defines the strike zone for this camera angle)
-3. For each video, an **interactive playback window** opens — user marks the catch frame
-4. Tool processes the catch frame using MediaPipe Pose glove tracking
-5. Outputs a `{filename}_tracked.{ext}` annotated video per input file, saved alongside the original
+1. Run the tool pointed at the top-level **`videos/` folder**
+2. Tool scans for **subfolders** — each subfolder represents one camera setup/session
+3. **Skip any subfolder where all videos already have a `_tracked` output** — only process new or unfinished folders
+4. For each new subfolder:
+   - If a profile matching the subfolder name exists → load it automatically
+   - If no matching profile exists → trigger interactive calibration and save under the subfolder name
+5. For each unprocessed video, an **interactive playback window** opens — user marks the catch frame
+6. Tool processes the catch frame using MediaPipe Pose glove tracking
+7. Outputs a `{filename}_tracked.{ext}` annotated video saved alongside the original in the subfolder
 
 ---
 
@@ -34,13 +38,14 @@
 ---
 
 ## Step 2 - Video Loading ✅
-- Accept a folder path as CLI argument
-- Scan folder for supported video files (mp4, mov, avi)
+- Scan top-level `videos/` folder for subfolders — each subfolder = one camera setup/session
+- For each subfolder, scan for supported video files (mp4, mov, avi)
+- Skip videos that already have a `_tracked` output file — only process new ones
 - Read each video with OpenCV (`cv2.VideoCapture`)
 - Extract FPS and frame count from video metadata
 
 **Files to create:**
-- `video_loader.py` — folder scanning, video reading, metadata extraction
+- `video_loader.py` — subfolder scanning, video reading, metadata extraction, processed file detection
 
 **Completed:**
 - Created `video_loader.py` with three functions:
@@ -48,26 +53,33 @@
   - `get_video_info(video_path)` — opens video and returns a `VideoInfo` dataclass with `fps`, `frame_count`, `width`, `height`, `duration_seconds`, and `filename`
   - `read_frame(cap, frame_number)` — seeks to a specific frame and returns it (utility needed by later modules)
 - Tested with `IMG_5217.MOV` — 30fps, 135 frames, 1920x1080, 4.5s duration
+- **Needs update:** add subfolder scanning and `_tracked` skip logic (to be done when wiring `main.py`)
 
 ---
 
-## Step 3 - Calibration Profiles
-- Named profiles that store strike zone corner coordinates
+## Step 3 - Calibration Profiles ✅
+- Profiles are named after their subfolder — auto-loaded when the tool processes that subfolder
+- If no matching profile exists for a subfolder, interactive calibration is triggered automatically
 - Profiles saved to a local JSON file (`profiles.json`)
-- At startup, user can:
-  - Select an existing profile
-  - Create a new profile (triggers interactive calibration)
-  - Edit an existing profile (re-run calibration)
-- One profile applies to the entire batch of videos being processed
+- Terminal UI also allows manually selecting, creating, or editing profiles
 
 **Interactive calibration:**
-- Display first frame of the first video
-- User clicks 4 corners of the strike zone
-- Zone saved to the selected profile name
+- Display first frame of the first video in the subfolder
+- User clicks the two front corners of home plate
+- Strike zone derived automatically: width = plate width, height = width × 1.5, bottom = 18in above plate
+- Zone saved under the subfolder name
 
 **Files to create:**
 - `calibration.py` — profile load/save, interactive calibration UI
 - `profiles.json` — persisted calibration profiles (gitignored)
+
+**Completed:**
+- User clicks two front corners of home plate — zone derived automatically (not 4 manual clicks)
+- `Profile` dataclass stores plate corners and derives `zone_rect`, `pixels_per_inch`, and `plate_width_px`
+- Zone bottom sits 18 inches above plate level (`STRIKE_ZONE_BOTTOM_OFFSET_INCHES = 18.0` in config)
+- Zone height = plate width × 1.5 (`STRIKE_ZONE_HEIGHT_RATIO = 1.5` in config)
+- Calibration window opens at 1280×720, previews derived zone after both clicks, R to reset, Esc to cancel
+- Profiles saved/loaded from `profiles.json` — save/load roundtrip tested successfully
 
 ---
 
@@ -172,7 +184,9 @@ catcher app/
 ├── framing_analysis.py
 ├── reporter.py
 ├── profiles.json        # gitignored — saved calibration profiles
-├── videos/              # input videos go here (gitignored)
+├── videos/              # top-level input folder (gitignored)
+│   ├── field-cam-A/     # example subfolder — one per camera setup
+│   └── practice-1/      # example subfolder
 └── PLAN.md
 ```
 
@@ -204,7 +218,9 @@ catcher app/
 | Post-catch tracking window | Dynamic — track until glove velocity < threshold; 2s max cap |
 | Direction reference | Nearest strike zone edge (not center) |
 | Overall score | None — 6 individual metrics only |
-| Batch input | Folder of video files |
+| Batch input | Top-level `videos/` folder containing subfolders per camera setup |
+| Skip logic | Subfolders where all videos have `_tracked` output are skipped automatically |
+| Profile linking | Profile name matches subfolder name — auto-loaded, calibration triggered if missing |
 | Output | Annotated video: `{filename}_tracked.{ext}`, saved alongside original |
 | Metrics overlay | Top left corner, visible on every frame |
 | Metrics | Glove Distance (in), Glove Speed (in/s), Direction, Hold Time (s), Elbow Movement (in), Body Stability (in) |

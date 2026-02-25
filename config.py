@@ -18,6 +18,12 @@ POSITION_SMOOTH_WINDOW = 5
 # Real-world width of home plate in inches — used for px-to-inches conversion
 HOME_PLATE_WIDTH_INCHES = 17.0
 
+# Strike zone height as a multiplier of plate width (approx 1.5x for average batter)
+STRIKE_ZONE_HEIGHT_RATIO = 1.5
+
+# How far the bottom of the strike zone sits above the plate level (inches)
+STRIKE_ZONE_BOTTOM_OFFSET_INCHES = 18.0
+
 # ---------------------------------------------------------------------------
 # Video
 # ---------------------------------------------------------------------------
