@@ -111,18 +111,41 @@
 
 ## Step 8 - Annotated Video Output
 - For each input video, produce `{filename}_tracked.{ext}` saved in the same folder
-- Overlays drawn on each frame:
-  - Strike zone rectangle (from calibration profile)
-  - Glove position dot
-  - Post-catch glove path trail
-  - Pitch classification label (`"framed"` / `"neutral"` / `"gave away"`)
-  - Per-pitch score
-- Summary stats shown at end of video:
-  - Overall framing grade
-  - Framing percentage by zone region
+- Full video is processed first, then output is written with all values known upfront
+
+**Body/glove overlay (on every frame):**
+- MediaPipe skeleton (pose landmarks)
+- Glove position dot
+- Post-catch glove path trail (catch frame onward)
+- Strike zone rectangle (from calibration profile)
+
+**Metrics panel — top left corner, every frame:**
+```
+FRAMING ANALYSIS
+────────────────────────
+Glove Distance   2.3 in
+Glove Speed      4.1 in/s
+Direction        Toward
+Hold Time        0.8 s
+Elbow Movement   1.1 in
+Body Stability   0.6 in
+```
+
+**Pixel-to-inches conversion:**
+- Anchored to home plate width = 17 inches
+- Pixel width of calibrated strike zone used to derive pixels-per-inch ratio
+- Approximate, not exact — acceptable for coaching feedback
+
+**Metric definitions:**
+- `Glove Distance` — total glove displacement from catch frame to settle point
+- `Glove Speed` — peak glove velocity during framing movement (in/s)
+- `Direction` — `Toward` or `Away` relative to strike zone center
+- `Hold Time` — seconds from catch frame to glove settle
+- `Elbow Movement` — total elbow landmark displacement from catch to settle
+- `Body Stability` — total shoulder/torso landmark displacement from catch to settle (less = better)
 
 **Files to create:**
-- `reporter.py` — frame annotation, video writing, summary overlay
+- `reporter.py` — frame annotation, metrics overlay, video writing
 
 ---
 
@@ -169,6 +192,9 @@ catcher app/
 | Post-catch tracking window | Dynamic — track until glove velocity < threshold; 2s max cap |
 | Batch input | Folder of video files |
 | Output | Annotated video: `{filename}_tracked.{ext}`, saved alongside original |
+| Metrics overlay | Top left corner, visible on every frame |
+| Metrics | Glove Distance (in), Glove Speed (in/s), Direction, Hold Time (s), Elbow Movement (in), Body Stability (in) |
+| Pixels-to-inches | Anchored to home plate width (17 in) via calibrated strike zone |
 
 ---
 
