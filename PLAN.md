@@ -33,7 +33,7 @@
 
 ---
 
-## Step 2 - Video Loading
+## Step 2 - Video Loading ✅
 - Accept a folder path as CLI argument
 - Scan folder for supported video files (mp4, mov, avi)
 - Read each video with OpenCV (`cv2.VideoCapture`)
@@ -41,6 +41,13 @@
 
 **Files to create:**
 - `video_loader.py` — folder scanning, video reading, metadata extraction
+
+**Completed:**
+- Created `video_loader.py` with three functions:
+  - `scan_folder(folder_path)` — returns sorted list of video paths, handles upper and lowercase extensions via `filename.lower()`
+  - `get_video_info(video_path)` — opens video and returns a `VideoInfo` dataclass with `fps`, `frame_count`, `width`, `height`, `duration_seconds`, and `filename`
+  - `read_frame(cap, frame_number)` — seeks to a specific frame and returns it (utility needed by later modules)
+- Tested with `IMG_5217.MOV` — 30fps, 135 frames, 1920x1080, 4.5s duration
 
 ---
 
