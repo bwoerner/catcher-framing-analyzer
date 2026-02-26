@@ -53,11 +53,11 @@ def main():
         else:
             print(f"No profile found for '{name}' — starting calibration...")
             videos = scan_folder(subfolder, skip_tracked=True)
-            result = calibrate(videos[0])
-            if result is None:
+            cal_result = calibrate(videos[0])
+            if cal_result is None:
                 print("Calibration cancelled — skipping this folder.\n")
                 continue
-            plate_left, plate_right = result
+            plate_left, plate_right = cal_result
             profile = Profile(name=name, plate_left=plate_left, plate_right=plate_right)
             profiles[name] = profile
             save_profiles(profiles)
@@ -71,21 +71,21 @@ def main():
             print(f"\n  {info.filename} — {info.fps:.0f}fps, {info.frame_count} frames, {info.duration_seconds:.1f}s")
             catch_frame = mark_catch_frame(v, profile)
             if catch_frame is None:
-                print(f"  Skipped.")
+                print("  Skipped.")
                 continue
             print(f"  Catch frame marked: {catch_frame}")
 
             # Step 5 — track full video with MediaPipe Pose
-            print(f"  Tracking landmarks...")
+            print("  Tracking landmarks...")
             frames = track_video(v)
 
             # Step 6 — analyse post-catch movement
             result = analyze(frames, catch_frame, fps=info.fps, profile=profile)
             if result is None:
-                print(f"  Analysis failed — insufficient data.")
+                print("  Analysis failed — insufficient data.")
                 continue
 
-            print(f"  --- Framing Analysis ---")
+            print("  --- Framing Analysis ---")
             print(f"  Glove Distance:  {result.glove_distance_in:.2f} in")
             print(f"  Glove Speed:     {result.glove_speed_in_s:.2f} in/s")
             print(f"  Direction:       {result.direction}")

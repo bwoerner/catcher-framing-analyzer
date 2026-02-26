@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import cv2
 
-from config import SUPPORTED_EXTENSIONS
+from config import SUPPORTED_EXTENSIONS, OUTPUT_SUFFIX
 
 
 @dataclass
@@ -44,9 +44,7 @@ def scan_folder(folder_path, skip_tracked=False):
     Return a sorted list of video file paths found in folder_path.
     If skip_tracked=True, exclude videos that already have a _tracked output.
     """
-    from config import OUTPUT_SUFFIX
     videos = []
-    from config import OUTPUT_SUFFIX
     for filename in sorted(os.listdir(folder_path)):
         if not filename.lower().endswith(SUPPORTED_EXTENSIONS):
             continue
@@ -62,7 +60,6 @@ def scan_folder(folder_path, skip_tracked=False):
 
 def _is_processed(folder_path, filename):
     """Return True if a _tracked output file exists for this video."""
-    from config import OUTPUT_SUFFIX
     name, ext = os.path.splitext(filename)
     tracked_name = f"{name}{OUTPUT_SUFFIX}{ext}"
     return os.path.exists(os.path.join(folder_path, tracked_name))

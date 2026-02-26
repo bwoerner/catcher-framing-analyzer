@@ -100,6 +100,3 @@ def mark_catch_frame(video_path, profile):
             cv2.destroyWindow("Mark Catch Frame")
             cap.release()
             return None
-
-    cap.release()
-    cv2.destroyAllWindows()

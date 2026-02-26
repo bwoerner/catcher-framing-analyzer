@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 import cv2
 import mediapipe as mp
-import numpy as np
 
 from config import POSITION_SMOOTH_WINDOW
 
@@ -129,6 +128,9 @@ def track_video(video_path):
         min_tracking_confidence=0.5,
     )
 
+    def _get(lm, idx):
+        return _to_px(lm[idx] if lm else None, width, height)
+
     raw = {k: [] for k in ["wrist", "elbow", "left_shoulder",
                             "right_shoulder", "left_hip", "right_hip"]}
     frame_numbers = []
@@ -147,15 +149,12 @@ def track_video(video_path):
 
             lm = result.pose_landmarks[0] if result.pose_landmarks else None
 
-            def get(idx):
-                return _to_px(lm[idx] if lm else None, width, height)
-
-            raw["wrist"].append(get(WRIST_IDX))
-            raw["elbow"].append(get(ELBOW_IDX))
-            raw["left_shoulder"].append(get(L_SHOULDER_IDX))
-            raw["right_shoulder"].append(get(R_SHOULDER_IDX))
-            raw["left_hip"].append(get(L_HIP_IDX))
-            raw["right_hip"].append(get(R_HIP_IDX))
+            raw["wrist"].append(_get(lm, WRIST_IDX))
+            raw["elbow"].append(_get(lm, ELBOW_IDX))
+            raw["left_shoulder"].append(_get(lm, L_SHOULDER_IDX))
+            raw["right_shoulder"].append(_get(lm, R_SHOULDER_IDX))
+            raw["left_hip"].append(_get(lm, L_HIP_IDX))
+            raw["right_hip"].append(_get(lm, R_HIP_IDX))
             frame_numbers.append(frame_idx)
             frame_idx += 1
 
