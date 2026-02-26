@@ -15,20 +15,34 @@ def mark_catch_frame(video_path, profile):
         return None
 
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_delay = max(1, int(1000 / fps))  # ms per frame for real-speed playback
+
     current_frame = 0
     marked_frame = None
     playing = False
+    need_seek = True  # only seek when jumping; sequential reads during playback
 
     cv2.namedWindow("Mark Catch Frame", cv2.WINDOW_NORMAL)
     cv2.resizeWindow("Mark Catch Frame", 1280, 720)
 
     while True:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
+        if need_seek:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
+            need_seek = False
+
         ret, frame = cap.read()
         if not ret:
-            current_frame = max(0, current_frame - 1)
-            playing = False
+            if playing:
+                # End of video — loop back to the beginning
+                current_frame = 0
+                need_seek = True
+            else:
+                current_frame = max(0, current_frame - 1)
+                need_seek = True
             continue
+
+        current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES)) - 1
 
         display = frame.copy()
 
@@ -58,15 +72,11 @@ def mark_catch_frame(video_path, profile):
 
         cv2.imshow("Mark Catch Frame", display)
 
-        # When playing, advance frame every 30ms; when paused, wait indefinitely for a key
-        key = cv2.waitKey(30 if playing else 0)
+        key = cv2.waitKey(frame_delay if playing else 0)
 
-        if playing:
-            if key == -1:
-                current_frame = min(current_frame + 1, total_frames - 1)
-                if current_frame == total_frames - 1:
-                    playing = False
-                continue
+        if playing and key == -1:
+            # No key pressed — continue sequential playback (no seek needed)
+            continue
 
         char = key & 0xFF
 
@@ -76,10 +86,12 @@ def mark_catch_frame(video_path, profile):
         elif char == ord('a') or char == ord('A'):  # A — step back one frame
             playing = False
             current_frame = max(0, current_frame - 1)
+            need_seek = True
 
         elif char == ord('d') or char == ord('D'):  # D — step forward one frame
             playing = False
             current_frame = min(current_frame + 1, total_frames - 1)
+            need_seek = True
 
         elif char == ord('m') or char == ord('M'):  # Mark
             marked_frame = current_frame

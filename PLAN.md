@@ -281,6 +281,28 @@ catcher app/
 
 ---
 
+## Post-Build Improvements
+
+### marker.py — Full-speed playback + auto-loop
+
+**Problems identified after testing:**
+- Playback runs in slow motion — every frame calls `cap.set()` to seek, which is expensive
+- Video stops at the last frame — no way to replay without restarting the whole tool
+
+**Decisions:**
+- **Playback speed:** Add a `need_seek` flag. Only call `cap.set()` when actually jumping (startup, A/D step, loop restart). During normal playback let `cap.read()` advance sequentially. Calculate per-frame delay from video FPS (`1000 / fps` ms).
+- **End of video:** Auto-loop — when `cap.read()` returns no frame during playback, seek back to frame 0 and continue playing. No user action required.
+
+**Changes to `marker.py`:**
+- Add `fps` and `frame_delay = max(1, int(1000 / fps))` from video metadata
+- Add `need_seek = True` flag — set True at start, after A/D steps, and on loop
+- Only call `cap.set()` when `need_seek` is True
+- Track `current_frame` from `cap.get(cv2.CAP_PROP_POS_FRAMES) - 1` after each read
+- On `not ret` during playback: seek to frame 0 and loop; when paused: clamp to last frame
+- Replace `waitKey(30)` with `waitKey(frame_delay)`
+
+---
+
 ## Config Values (to tune during development)
 
 - `GLOVE_VELOCITY_THRESHOLD` — px/frame below which glove is considered settled
