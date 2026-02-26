@@ -35,6 +35,18 @@ SUPPORTED_EXTENSIONS = (".mp4", ".mov", ".avi")
 OUTPUT_SUFFIX = "_tracked"
 
 # ---------------------------------------------------------------------------
+# Qualitative rating thresholds (inches)
+# ---------------------------------------------------------------------------
+
+# Elbow movement: how much the elbow moves from catch to settle
+ELBOW_GOOD_THRESHOLD       = 3.0   # < 3 in  → Good
+ELBOW_OK_THRESHOLD         = 6.0   # 3–6 in  → OK,  > 6 in → Needs Work
+
+# Body stability: average 4-point body frame displacement from catch to settle
+BODY_GOOD_THRESHOLD        = 2.0   # < 2 in  → Good
+BODY_OK_THRESHOLD          = 3.5   # 2–3.5 in → OK,  > 3.5 in → Needs Work
+
+# ---------------------------------------------------------------------------
 # Overlay
 # ---------------------------------------------------------------------------
 

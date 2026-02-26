@@ -5,6 +5,8 @@ import sys
 from video_loader import scan_subfolders, scan_folder, get_video_info
 from calibration import load_profiles, calibrate, save_profiles, Profile
 from marker import mark_catch_frame
+from glove_tracker import track_video
+from framing_analysis import analyze
 
 DEFAULT_VIDEO_FOLDER = os.path.join(os.path.dirname(__file__), "videos")
 
@@ -73,8 +75,24 @@ def main():
                 continue
             print(f"  Catch frame marked: {catch_frame}")
 
-        # TODO: Step 5 — glove_tracker.py (MediaPipe tracking)
-        # TODO: Step 6 — framing_analysis.py (metrics)
+            # Step 5 — track full video with MediaPipe Pose
+            print(f"  Tracking landmarks...")
+            frames = track_video(v)
+
+            # Step 6 — analyse post-catch movement
+            result = analyze(frames, catch_frame, fps=info.fps, profile=profile)
+            if result is None:
+                print(f"  Analysis failed — insufficient data.")
+                continue
+
+            print(f"  --- Framing Analysis ---")
+            print(f"  Glove Distance:  {result.glove_distance_in:.2f} in")
+            print(f"  Glove Speed:     {result.glove_speed_in_s:.2f} in/s")
+            print(f"  Direction:       {result.direction}")
+            print(f"  Hold Time:       {result.hold_time_s:.2f} s")
+            print(f"  Elbow Movement:  {result.elbow_movement_in:.2f} in  ({result.elbow_rating})")
+            print(f"  Body Stability:  {result.body_stability_in:.2f} in  ({result.body_rating})")
+
         # TODO: Step 7 — reporter.py (annotated video output)
 
         print()

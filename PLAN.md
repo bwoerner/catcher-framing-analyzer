@@ -142,7 +142,7 @@
 
 ---
 
-## Step 6 - Post-Catch Movement Analysis
+## Step 6 - Post-Catch Movement Analysis ✅
 - Starting from the marked catch frame, track glove position forward
 - **Stop condition:** glove velocity drops below threshold (defined in `config.py`) — glove has settled
 - **Max cap:** 2 seconds (converted to frames using video FPS at runtime)
@@ -151,10 +151,21 @@
   - Direction: `Toward` or `Away` relative to the nearest strike zone edge
   - Total displacement magnitude
   - Elbow displacement from catch to settle
-  - Shoulder/torso displacement from catch to settle
+  - Body stability displacement from catch to settle (average of left shoulder, right shoulder, left hip, right hip)
 
 **Files to create:**
 - `framing_analysis.py` — velocity calculation, path analysis, zone proximity math, direction determination
+
+**Completed:**
+- Created `framing_analysis.py` with `analyze(frames, catch_frame, fps, profile)` → `FramingResult`
+- Direction logic handles two cases: catch outside zone → nearest zone edge; catch inside zone → zone center
+- All 6 metrics computed and converted to inches via `profile.pixels_per_inch`
+- Added qualitative ratings (Good / OK / Needs Work) for Elbow Movement and Body Stability
+- Rating thresholds stored in `config.py` — tuned against real video:
+  - Elbow: Good < 3 in, OK < 6 in, Needs Work ≥ 6 in
+  - Body: Good < 2 in, OK < 3.5 in, Needs Work ≥ 3.5 in
+- Wired into `main.py` — all metrics and ratings printed to terminal after analysis
+- Tested on `IMG_5217.MOV` catch frame 61 — all metrics and ratings confirmed correct
 
 ---
 
