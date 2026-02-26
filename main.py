@@ -7,6 +7,7 @@ from calibration import load_profiles, calibrate, save_profiles, Profile
 from marker import mark_catch_frame
 from glove_tracker import track_video
 from framing_analysis import analyze
+from reporter import write_tracked_video
 
 DEFAULT_VIDEO_FOLDER = os.path.join(os.path.dirname(__file__), "videos")
 
@@ -93,7 +94,10 @@ def main():
             print(f"  Elbow Movement:  {result.elbow_movement_in:.2f} in  ({result.elbow_rating})")
             print(f"  Body Stability:  {result.body_stability_in:.2f} in  ({result.body_rating})")
 
-        # TODO: Step 7 — reporter.py (annotated video output)
+            # Step 7 — write annotated output video
+            print("  Writing annotated video...")
+            output_path = write_tracked_video(v, frames, result, profile)
+            print(f"  Saved: {os.path.basename(output_path)}")
 
         print()
 

@@ -169,7 +169,7 @@
 
 ---
 
-## Step 7 - Annotated Video Output
+## Step 7 - Annotated Video Output ✅
 - For each input video, produce `{filename}_tracked.{ext}` saved in the same folder
 - Full video is processed first, then output is written with all values known upfront
 
@@ -206,6 +206,18 @@ Body Stability   0.6 in
 
 **Files to create:**
 - `reporter.py` — frame annotation, metrics overlay, video writing
+
+**Completed:**
+- Created `reporter.py` with `write_tracked_video(video_path, frames, result, profile)` — reads source video frame by frame, annotates each frame, writes output
+- `_draw_zone()` — strike zone rectangle drawn on every frame from calibration profile
+- `_draw_skeleton()` — 6-point body frame (shoulders, hips, elbow, wrist) with connecting lines drawn on every frame
+- `_draw_glove()` — orange dot on left wrist position every frame
+- `_draw_trail()` — cyan path trail grows from catch frame to settle frame, holds on screen afterwards
+- `_draw_metrics_panel()` — two-column panel (header + separator + 6 metric rows) in top-left corner every frame; column widths measured with `cv2.getTextSize` for proper alignment with proportional font
+- `_ipt()` helper converts smoothed float landmark coords to int tuples as required by OpenCV drawing functions
+- Output codec: `mp4v`, saved alongside original as `{filename}_tracked.{ext}`
+- Wired into `main.py` — runs after analysis, prints saved filename to terminal
+- Tested on `IMG_5217.MOV` — `IMG_5217_tracked.MOV` produced successfully with all overlays visible
 
 ---
 
@@ -257,7 +269,7 @@ catcher app/
 | Pitch segmentation | Manual — user marks one catch frame per video during interactive playback |
 | Catch frame marking | Press `M` to mark, press again to move the mark; `Enter` to confirm |
 | Post-catch tracking window | Dynamic — track until glove velocity < threshold; 2s max cap |
-| Direction reference | Nearest strike zone edge (not center) |
+| Direction reference | Nearest zone edge when catch is outside zone; zone center when catch is inside zone |
 | Overall score | None — 6 individual metrics only |
 | Batch input | Top-level `videos/` folder containing subfolders per camera setup |
 | Skip logic | Subfolders where all videos have `_tracked` output are skipped automatically |
